@@ -1,12 +1,17 @@
+%%%%%%%%%%%% ADD APPROPRIATE PATHS %%%%%%%%%
+addpath('HelperFuns')
+addpath('Input')
+addpath('Outputs')
+
 %%%%%%%%%%%%% READING DATA %%%%%%%%%%%%%%%%%
 % Read training data
-trainingFile = 'trainingData-release_cytocat.xlsx';
+trainingFile = '/Input/trainingData-release_cytocat.xlsx';
 tbl = ReadExcel(trainingFile);
 
 tbl = tableClean(tbl,'train');
 
 % Read test data
-testFile = 'scoringData-release_cytocat.xlsx';
+testFile = '/Input/scoringData-release_cytocat.xlsx';
 testTable = ReadExcel(testFile);
 
 testTable = tableClean(testTable,'test');
@@ -75,7 +80,7 @@ fprintf('---------------------\n')
 %%%%%%%%%%%%%%%%%%
 
 %%%%%%% PRINT TO OUTPUT FILE %%%%%%%%%
-writeToOutput('HewesTanZhuJahn_Week2_SC1.txt',SVMout,nanRows1,0.5,1)
+writeToOutput('Outputs/HewesTanZhuJahn_Week2_SC1.txt',SVMout,nanRows1,0.5,1)
 
 %%%%%%%%%%%%%%%%%%%%%%% Subchallenge 2 %%%%%%%%%%%%%%%%%
 % Convert to ML friendly matrix
@@ -93,7 +98,7 @@ for patient = 1:size(testMat2,1);
     estRemission(patient) = meanRemission*exp(sum(b2'.*testMat2(patient,:)));
 end
 
-writeToOutput('HewesTanZhuJahn_Week2_SC2.txt',estRemission,nanRows2,meanRemission,2)
+writeToOutput('Outputs/HewesTanZhuJahn_Week2_SC2.txt',estRemission,nanRows2,meanRemission,2)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%% Subchallenge 3 %%%%%%%%%%%%%%%%%
@@ -112,5 +117,5 @@ for patient = 1:size(testMat3,1);
     estSurvival(patient) = meanSurvival*exp(sum(b3'.*testMat3(patient,:)));
 end
 
-writeToOutput('HewesTanZhuJahn_Week2_SC3.txt',estSurvival,nanRows3,meanSurvival,3)
+writeToOutput('Outputs/HewesTanZhuJahn_Week2_SC3.txt',estSurvival,nanRows3,meanSurvival,3)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
