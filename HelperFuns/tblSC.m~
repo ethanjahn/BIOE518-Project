@@ -30,12 +30,10 @@ tblData = table2array(tbl);
 Headers = tbl.Properties.VariableNames;
 
 %%%%%%%%%%%%% Remove NaN %%%%%%%%%%%%%%%%%%%%
-% Change NaN values to the mean of the column they are in
-tblData = changeNaN(tblData);
-
-%%%% LEGACY REMOVE AFTER TESTING
 % Record nanRows so they can be dealt with for test data
 nanRows = any(isnan(tblData),2);
+
+tblData = tblData(~any(isnan(tblData),2),:);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 if strcmp(type,'train')
