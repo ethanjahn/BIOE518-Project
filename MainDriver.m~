@@ -121,6 +121,8 @@ for n = 1:numel(headers1)
     fprintf('%-15s:%15.3f\n',headers1{n},meanImportance(n));
 end
 fprintf('---------------------\n')
+
+
 %writeToOutput('Outputs/HewesTanZhuJahn_Week4_SC1.txt',prediction,1)
 %%%%%%%%%%%%%%%%%%
 

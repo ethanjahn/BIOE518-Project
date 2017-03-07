@@ -1,4 +1,9 @@
-function [trainingMat,responseVar,nanRows] = tblSC(tbl,type,SC)
+function [trainingMat,responseVar,nanRows,Headers] = tblSC(tbl,type,SC)
+
+% Add additional features as necessary
+tbl.BM_ABS_RATIO = tbl.BM_BLAST ./ tbl.ABS_BLST;
+tbl.BM_ABS_RATIO(tbl.BM_ABS_RATIO == Inf) = 0;
+tbl.BM_ABS_RATIO(isnan(tbl.BM_ABS_RATIO)) = 0;
 
 % Remove training data that is irrelevant depending on subchallenge
 if strcmp(type,'train')
@@ -30,12 +35,23 @@ tblData = table2array(tbl);
 Headers = tbl.Properties.VariableNames;
 
 %%%%%%%%%%%%% Remove NaN %%%%%%%%%%%%%%%%%%%%
-% Change NaN values to the mean of the column they are in
-tblData = changeNaN(tblData);
-
-%%%% LEGACY REMOVE AFTER TESTING
-% Record nanRows so they can be dealt with for test data
-nanRows = any(isnan(tblData),2);
+if SC == 1
+    % Change NaN values to the mean of the column they are in
+    %tblData = changeNaN(tblData);
+    
+    % Record nanRows so they can be dealt with for test data
+    nanRows = any(isnan(tblData),2);
+elseif (SC == 2 || SC == 3) && strcmp(type,'train')
+    % Record nanRows so they can be dealt with for test data
+    nanRows = any(isnan(tblData),2);
+    
+    disp('Fix removing NaN in the response var for SC2 and 3')
+    %{
+    %%% TODO %%%
+    % Remove rows with NaN in the response var
+    tblData(
+    %}
+end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 if strcmp(type,'train')
@@ -44,6 +60,7 @@ if strcmp(type,'train')
     tblData(:,strcmp(Headers,responseCol)) = [];
     
     Headers(strcmp(Headers,responseCol)) = [];
+    
 elseif strcmp(type,'test')
     responseVar = [];
 else
@@ -51,8 +68,8 @@ else
 end
 
 %%%%%%%%%%%%% NORMALIZE %%%%%%%%%%%%%%%%%%%%
-% Normalize the training matrix by the Zscore
-trainingMat = zscore(tblData);
+% Normalize the training matrix by the nanZscore (leaves NaN values)
+trainingMat = nanzscore(tblData);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%% WEIGHTING %%%%%%%%%%%%%%%%%%%
@@ -60,32 +77,18 @@ trainingMat = zscore(tblData);
 for i = 1:size(tblData,2)
     weight.(Headers{i}) = 0;
 end
+
 weight.cyto_cat_score = 1;
 weight.PRIOR_MAL = 1;
 weight.ITD = 1;
 weight.D835 = 1;
 weight.Age_at_Dx = 1;
 weight.WBC = 1;
-weight.NPM1 = 1;
-weight.NPM1_3542 = 1;
-weight.TP53 = 1;
-weight.CD34 = 1;
-weight.KIT = 1;
-weight.CD33 = 1;
-weight.ABS_BLST = 1;
-weight.BM_BLAST = 1;
+% New 
 weight.BM_MONOCYTES = 1;
 weight.PB_BLAST = 1;
-weight.BM_PROM = 1;
 weight.PB_MONO = 1;
-weight.PB_PROM = 1;
-
-% ABS, PBBLAST PB MONO, PB PROM, BM BLast BM MONOCYTESS, BM PROM
-
-% Least important proteins
-%weight.ERG = 1;
-%weight.HSP90AA1_B1 = 1;
-%weight.CBL = 1;
+weight.BM_ABS_RATIO = 1;
 
 weight = struct2cell(weight);
 weight = cell2mat(weight);
@@ -93,10 +96,10 @@ weight = weight';
 
 % Multiply the training matrix by the weights
 weight = repmat(weight,size(trainingMat,1),1);
-
 trainingMat = trainingMat.*weight;
 
 % Remove zero columns
+Headers(~any(trainingMat)) = [];
 trainingMat(:,~any(trainingMat)) = [];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
