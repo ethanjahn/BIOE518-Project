@@ -1,4 +1,4 @@
-function [trainingMat,responseVar,nanRows,Headers] = tblSC(tbl,type,SC)
+function [trainingMat,responseVar,nanRows,Headers,proteinMat,proteinHeaders] = tblSC(tbl,type,SC)
 
 % Add additional features as necessary
 tbl.BM_ABS_RATIO = tbl.BM_BLAST ./ tbl.ABS_BLST;
@@ -72,6 +72,17 @@ end
 trainingMat = nanzscore(tblData);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%%%%%%%%%%%% CREATE THE PROTEIN MATRIX %%%%%%%%%
+firstProtein = 'ACTB';
+lastProtein = 'ZNF346';
+
+firstProteinIndex = find(strcmp(Headers,firstProtein));
+lastProteinIndex = find(strcmp(Headers,lastProtein));
+
+proteinMat = trainingMat(:,firstProteinIndex:lastProteinIndex);
+proteinHeaders = Headers(firstProteinIndex:lastProteinIndex);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%%%%%%%%%%%% WEIGHTING %%%%%%%%%%%%%%%%%%%
 % Create a weighting struct
 for i = 1:size(tblData,2)
@@ -101,6 +112,6 @@ trainingMat = trainingMat.*weight;
 % Remove zero columns
 Headers(~any(trainingMat)) = [];
 trainingMat(:,~any(trainingMat)) = [];
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 end

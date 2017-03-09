@@ -28,6 +28,7 @@ Data(strcmp(Data,'NA')) = {NaN};
 table = cell2table(Data);
 table.Properties.VariableNames = Headers;
 
+%{
 % Chemo simplest
 % Std
 % Anthra
@@ -37,6 +38,6 @@ table.ChemoAraC = strcmp(table.ChemoSimplest,'StdAraC-Plus');
 table.ChemoAnthra = strcmp(table.ChemoSimplest,'Anthra-HDAC');
 table.ChemoFlu = strcmp(table.ChemoSimplest,'Flu-HDAC');
 table.ChemoHDACPlus = strcmp(table.ChemoSimplest,'HDAC-Plus non Anthra');
-
+%}
 
 end

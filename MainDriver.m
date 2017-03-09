@@ -27,13 +27,13 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Convert to ML friendly matrix
 %   Training
-[trainingMat1,responseVar1,~,headers1] = tblSC(tbl,'train',1);
+[trainingMat1,responseVar1,~,headers1,proteinMat,proteinHeaders] = tblSC(tbl,'train',1);
 
 % Y scramble training
 %responseVar1 = responseVar1(randperm(length(responseVar1)));
 
 %   Testing
-[testMat1,~,nanRows1] = tblSC(testTable,'test',1);
+[testMat1,~,nanRows1,~,proteinTest] = tblSC(testTable,'test',1);
 
 %{
 %%%%%% SVM %%%%%%%
@@ -64,44 +64,26 @@ fprintf('---------------------\n')
 %%%%%%%%%%%%%%%%%%
 %}
 
+% Hyperparams
+NLearn = 300;
+LearnRate = 0.6;
+KFold = 50;
+
 %%%%%% ADA %%%%%%%
 % train RF model
-%ExampleOptimize(trainingMat1,responseVar1)
+[prediction,BackLabelRF,importance] = ModelBuild(trainingMat1,responseVar1,NLearn,LearnRate,KFold,testMat1);
 
-% Parameters to optimize (MaxCat, NLearn, LearnRate)
-t = templateTree('Surrogate','on','Prune','off');
+%%%%%%% PROTEIN MODEL %%%%%%%%
+[predictionProt,BackLabelRFProt,importanceProt] = ModelBuild(proteinMat,responseVar1,NLearn,LearnRate,KFold,proteinTest);
 
-RFmodel = fitensemble(trainingMat1,responseVar1,'AdaBoostM1',300,t,'LearnRate',0.6,'KFold',50);
-% Week 4: NLearn = 130, LearnRate = 0.4, 
-% Week 5: NLearn = 300, LearnRate = 0.7, kfoldLoss = 0.351
+%%%%%% COMBINE MODELS %%%%%%%
+proteinWeight = 0.2;
+categoryWeight = 1 - proteinWeight;
 
+predictionCombined = proteinWeight.*predictionProt + categoryWeight.*prediction;
+backLabelCombined = BackLabelRFProt.*proteinWeight + categoryWeight.*BackLabelRF;
 
-for i = 1:size(RFmodel.Trained,1)
-    prediction(:,i) = predict(RFmodel.Trained{i},testMat1);
-    backLabelRF(:,i) = predict(RFmodel.Trained{i},trainingMat1);
-    importance (:,i) = predictorImportance(RFmodel.Trained{i});
-end
-
-% Back label
-backLabelRF(backLabelRF == -1) = 0;
-backLabelRF = mean(backLabelRF,2);
-
-% Convert all -1 to 0
-prediction(prediction == -1) = 0;
-% Find the mean of the predictions of the trained models
-prediction = mean(prediction,2);
-
-% Convert -1 to 0 in the response var for scoring
-respVarScore = responseVar1;
-respVarScore(respVarScore == -1) = 0;
-
-% Display kfold loss
-RFkfold = kfoldLoss(RFmodel);
-
-% BAC and AUROC
-[RFbac,RFauroc] = score(backLabelRF,respVarScore);
-
-
+%{
 fprintf('=====================\n')
 fprintf('For RF:\n')
 fprintf('BAC: %.3f\n',RFbac)
@@ -109,18 +91,12 @@ fprintf('AUROC: %.3f\n',RFauroc)
 fprintf('kfold Loss: %.3f\n',RFkfold)
 fprintf('Num of PR Predictions: %.0f\n',sum(prediction < 0.5))
 fprintf('---------------------\n')
+%}
 
-% Mean predictor importances
-meanImportance = mean(importance');
-% Normalize to max importance
-meanImportance = meanImportance./max(meanImportance);
+importancePrint(importance,headers1)
+importancePrint(importanceProt,proteinHeaders)
 
-fprintf('=====================\n')
-fprintf('Predictor\t  Relative Importance\n')
-for n = 1:numel(headers1)
-    fprintf('%-15s:%15.3f\n',headers1{n},meanImportance(n));
-end
-fprintf('---------------------\n')
+
 %writeToOutput('Outputs/HewesTanZhuJahn_Week4_SC1.txt',prediction,1)
 %%%%%%%%%%%%%%%%%%
 
