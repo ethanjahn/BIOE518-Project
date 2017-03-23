@@ -1,11 +1,14 @@
 %%%%%%%%%%% USER INPUTS %%%%%%%%%%%%
 % Hyperparams
-NLearn = 50;
+NLearn = 20;
 LearnRate = 1;
 KFold = 2;
 
 % Weight for protein forest
-proteinWeight = 0.4;
+proteinWeight = 0.1;
+
+% Number of PR patients used in each balanced set
+NUM_PR_USED = 50; % Max = 55, there are 55 PR patients in set
 
 %%%% Feature Selection %%%
 weightCell = {
@@ -20,6 +23,10 @@ weightCell = {
     'PB_MONO',1;
     'BM_ABS_RATIO',1;
     'SEX',1;
+    'ChemoAraC',1;
+    'ChemoAnthra',1;
+    'ChemoFlu',1;
+    'ChemoHDACPlus',1;
     };
 
 % Marginal patient tolerance
@@ -68,47 +75,19 @@ testTableCat = weightTable(testTableAll,weightCell);
 % Get protein test table
 testTableProtein = makeProteinTable(testTableAll);
 
-%{
-%%%%%% SVM %%%%%%%
-% train SVM model
-SVMmodel = fitcsvm(trainingMat1,responseVar1);
-
-% Use SVM model to back predict to get scores
-backLabelSVM = predict(SVMmodel,trainingMat1);
-
-% Predictions for test matrix
-SVMout = predict(SVMmodel,testMat1);
-
-% Cross-validation
-SVMcross = crossval(SVMmodel);
-
-% Display kfold loss
-SVMkfold = kfoldLoss(SVMcross);
-
-% BAC and AUROC
-[SVMbac,SVMauroc] = score(backLabelSVM,responseVar1);
-
-fprintf('=====================\n')
-fprintf('For SVM:\n')
-fprintf('BAC: %.3f\n',SVMbac)
-fprintf('AUROC: %.3f\n',SVMauroc)
-fprintf('kfold Loss: %.3f\n',SVMkfold)
-fprintf('---------------------\n')
-%%%%%%%%%%%%%%%%%%
-%}
-
-
-
-%%%%%% ADA %%%%%%%
+%%%%%% CATEGORICAL MODEL %%%%%%%
 % train RF model
 [prediction,BackLabel,importance,foldLossCat] = ModelBuild(trainingTableCat,responseVar,...
-    NLearn,LearnRate,KFold,testTableCat);
+    NLearn,LearnRate,KFold,testTableCat,NUM_PR_USED);
 
 %%%%%%% PROTEIN MODEL %%%%%%%%
 [predictionProt,BackLabelProt,importanceProt,foldLossProt] = ModelBuild(trainingTableProtein,responseVar,...
-    NLearn,LearnRate,KFold,testTableProtein);
+    NLearn,LearnRate,KFold,testTableProtein,NUM_PR_USED);
 
 %%%%%% COMBINE MODELS %%%%%%%
+if proteinWeight > 1 || proteinWeight < 0
+    error('Invalid protein weight')
+end
 categoryWeight = 1 - proteinWeight;
 
 % Combine predictions
@@ -143,6 +122,5 @@ importanceTableProt = table(testTableProtein.Properties.VariableNames',importanc
 disp(sortrows(importanceTableCat,2,{'descend'}))
 disp(sortrows(importanceTableProt,2,{'descend'}))
 
-
-%writeToOutput('Outputs/HewesTanZhuJahn_Week4_SC1.txt',prediction)
+%writeToOutput('Outputs/HewesTanZhuJahn_Week7_SC1.txt',prediction)
 %%%%%%%%%%%%%%%%%%
